@@ -1,23 +1,26 @@
-import { Navigate, Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
-import TransitionLayout from './components/TransitionLayout'
-import Dashboard from './pages/Dashboard'
-import Subscriptions from './pages/Subscriptions'
-import SubscriptionDetail from './pages/SubscriptionDetail' // Fixed: Added missing import
-import Plans from './pages/Plans'
-import CreatePlan from './pages/CreatePlan'
-import UIMockups from './pages/UIMockups'
-import Landing from './pages/Landing'
-import BrowsePlans from './pages/BrowsePlans'
-import OnboardingBusiness from './pages/OnboardingBusiness'
-import OnboardingPayout from './pages/OnboardingPayout'
-import OnboardingReviewPage from './components/OnboardingReview'
-import UsageBilling from './pages/UsageBilling'
-import OnboardingSuccess from './pages/OnboardingSuccess'
-import AboutPrepaidBalances from './components/AboutPrepaidBalances'
-import Pricing from "./pages/Pricing"
-import BrandPack from "./pages/BrandPack"
-import Settings from "./pages/Settings"
+import { Navigate, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import TransitionLayout from "./components/TransitionLayout";
+import Dashboard from "./pages/Dashboard";
+import Subscriptions from "./pages/Subscriptions";
+import SubscriptionDetail from "./pages/SubscriptionDetail"; // Fixed: Added missing import
+import Plans from "./pages/Plans";
+import CreatePlan from "./pages/CreatePlan";
+import UIMockups from "./pages/UIMockups";
+import Landing from "./pages/Landing";
+import BrowsePlans from "./pages/BrowsePlans";
+import OnboardingBusiness from "./pages/OnboardingBusiness";
+import OnboardingPayout from "./pages/OnboardingPayout";
+import OnboardingReviewPage from "./components/OnboardingReview";
+import UsageBilling from "./pages/UsageBilling";
+import OnboardingSuccess from "./pages/OnboardingSuccess";
+import GiftRedeemSuccess from "./pages/GiftRedeemSuccess";
+import RedeemGift from "./pages/RedeemGift";
+import AboutPrepaidBalances from "./components/AboutPrepaidBalances";
+import Pricing from "./pages/Pricing";
+import BrandPack from "./pages/BrandPack";
+import Settings from "./pages/Settings";
+import DesignTokens from "./pages/DesignTokens";
 
 function App() {
   return (
@@ -30,11 +33,16 @@ function App() {
         path="/about-prepaid-balances"
         element={<AboutPrepaidBalances />}
       />
-      <Route path="/onboarding" element={<Navigate to="/onboarding/business" replace />} />
+      <Route
+        path="/onboarding"
+        element={<Navigate to="/onboarding/business" replace />}
+      />
       <Route path="/onboarding/business" element={<OnboardingBusiness />} />
       <Route path="/onboarding/payout" element={<OnboardingPayout />} />
       <Route path="/onboarding/review" element={<OnboardingReviewPage />} />
       <Route path="/onboarding-success" element={<OnboardingSuccess />} />
+      <Route path="/redeem-gift" element={<RedeemGift />} />
+      <Route path="/gift-redeem-success" element={<GiftRedeemSuccess />} />
 
       {/* 2. Authenticated Routes (Wrapped in Layout) */}
       <Route element={<Layout />}>
@@ -55,6 +63,7 @@ function App() {
           {/* Development/UI Kit */}
           <Route path="/ui-kit" element={<UIMockups />} />
           <Route path="/brand" element={<BrandPack />} />
+          <Route path="/design-tokens" element={<DesignTokens />} />
         </Route>
       </Route>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useMemo, useState } from "react";
 import "./ReceiptPrint.css";
+import { useScopedTheme } from "../../hooks/useScopedTheme";
 
 type Money = {
   amount: number;
@@ -59,14 +60,14 @@ function safeCurrencyParse(value: string | undefined | null): { amount: number; 
   if (!normalized) return null;
 
   // Try: "12.34 USDC" or "12.34 USDC" variants
-  const m1 = normalized.match(/^(-?\d+(?:[\.,]\d+)?)\s*([A-Za-z]{3,})$/);
+  const m1 = normalized.match(/^(-?\d+(?:[.,]\d+)?)\s*([A-Za-z]{3,})$/);
   if (m1) {
     const amt = Number(m1[1].replace(",", "."));
     return { amount: Number.isFinite(amt) ? amt : 0, currency: m1[2].toUpperCase() };
   }
 
   // Try: "USDC 12.34"
-  const m2 = normalized.match(/^([A-Za-z]{3,})\s*(-?\d+(?:[\.,]\d+)?)$/);
+  const m2 = normalized.match(/^([A-Za-z]{3,})\s*(-?\d+(?:[.,]\d+)?)$/);
   if (m2) {
     const amt = Number(m2[2].replace(",", "."));
     return { amount: Number.isFinite(amt) ? amt : 0, currency: m2[1].toUpperCase() };
@@ -105,6 +106,10 @@ export default function ReceiptPreview({ receipt }: { receipt: ReceiptData | nul
   const [downloadState, setDownloadState] = useState<"idle" | "compiling" | "ready">("idle");
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadButtonId = useId();
+
+  // Force light theme on the paper element — receipts/PDFs must always render
+  // in light mode regardless of the user's global theme preference.
+  const paperRef = useScopedTheme<HTMLDivElement>('light');
 
   const hasHistory = !!receipt && receipt.lineItems && receipt.lineItems.length > 0;
 
@@ -170,7 +175,7 @@ export default function ReceiptPreview({ receipt }: { receipt: ReceiptData | nul
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-      } catch (e) {
+      } catch {
         setDownloadError("Unable to start download.");
         setDownloadState("idle");
       }
@@ -250,7 +255,7 @@ export default function ReceiptPreview({ receipt }: { receipt: ReceiptData | nul
       </header>
 
       <div className="rp-preview" aria-label="Receipt preview container">
-        <div className="rp-paper" role="region" aria-label="Receipt document" tabIndex={0}>
+        <div className="rp-paper" ref={paperRef} role="region" aria-label="Receipt document" tabIndex={0}>
           {/* Header area */}
           <div className="rp-doc-header">
             <div className="rp-doc-brand">
