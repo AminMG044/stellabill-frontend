@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, Sparkles } from "lucide-react";
 import LandingNavbar from "./LandingNavbar";
 import CommandPalette, { CommandItem } from "./CommandPalette";
 import KeyboardShortcutsOverlay from "./KeyboardShortcutsOverlay";
@@ -121,6 +121,16 @@ const devNav = [
       </svg>
     ),
   },
+  {
+    path: "/design-tokens",
+    label: "Design Tokens",
+    icon: (
+      <svg className="sb-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" />
+        <circle cx="8" cy="7" r="2" /><circle cx="14" cy="12" r="2" /><circle cx="10" cy="17" r="2" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Layout() {
@@ -167,11 +177,18 @@ export default function Layout() {
       { id: "page-settings", label: "Settings", group: "Pages", keywords: "preferences account", perform: () => navigate("/settings") },
       { id: "page-ui-kit", label: "UI Kit", group: "Pages", keywords: "components developer", perform: () => navigate("/ui-kit") },
       { id: "page-brand", label: "Brand", group: "Pages", keywords: "design tokens", perform: () => navigate("/brand") },
+      { id: "page-design-tokens", label: "Design Tokens", group: "Pages", keywords: "css variables colors spacing typography motion", perform: () => navigate("/design-tokens") },
     ];
     const actions: CommandItem[] = [
       { id: "action-create-plan", label: "Create plan", group: "Actions", hint: "Start a new billing plan", keywords: "add new plan", perform: () => navigate("/plans/create") },
       { id: "action-refund", label: "Issue refund", group: "Actions", hint: "Refund a subscription payment", keywords: "money back return reverse", perform: () => navigate("/subscriptions") },
       { id: "action-pause", label: "Pause subscription", group: "Actions", hint: "Temporarily stop billing", keywords: "hold suspend freeze", perform: () => navigate("/subscriptions") },
+      { id: "action-tour", label: "Start product tour", group: "Actions", hint: "Take a guided tour of the dashboard", keywords: "help guide tutorial onboarding walkthrough", perform: () => {
+        // Trigger tour restart by clearing localStorage and reloading
+        localStorage.removeItem('sb:tour-completed');
+        localStorage.removeItem('sb:tour-dismissed');
+        window.location.reload();
+      }},
     ];
     return [...pages, ...actions];
   }, [navigate]);
@@ -407,6 +424,20 @@ export default function Layout() {
               >
                 <CircleHelp className="sb-sidebar__icon" aria-hidden="true" />
                 <span className="sb-sidebar__link-label">Help &amp; support</span>
+              </button>
+              <button
+                type="button"
+                className="sb-sidebar__link"
+                onClick={() => {
+                  localStorage.removeItem('sb:tour-completed');
+                  localStorage.removeItem('sb:tour-dismissed');
+                  navigate('/dashboard');
+                  window.location.reload();
+                }}
+                title="Restart product tour"
+              >
+                <Sparkles className="sb-sidebar__icon" aria-hidden="true" />
+                <span className="sb-sidebar__link-label">Product tour</span>
               </button>
             </div>
           </nav>

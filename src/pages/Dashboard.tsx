@@ -22,6 +22,11 @@ import DashboardSkeleton from '../components/Dashboard/DashboardSkeleton';
 import RevenueSplitByPlanPanel from '../components/Dashboard/RevenueSplitByPlanPanel';
 import CardErrorSlot from '../components/Dashboard/CardErrorSlot';
 import OnboardingChecklistWidget from '../components/Dashboard/OnboardingChecklistWidget';
+import HelpHint from '../components/help/HelpHint';
+import ProductTour from '../components/ProductTour/ProductTour';
+import TourCompletion from '../components/ProductTour/TourCompletion';
+import { dashboardTourSteps } from '../components/ProductTour/tourSteps';
+import { useProductTour } from '../hooks/useProductTour';
 import type { PlanRevenueSlice } from '../components/Dashboard/revenueSplitUtils';
 import {
   useDashboardWidgets,
@@ -36,6 +41,19 @@ const MOCK_PLAN_REVENUE: PlanRevenueSlice[] = [
   { planId: 'business', planName: 'Business', revenue: 9800, previousRevenue: 10200 },
   { planId: 'enterprise', planName: 'Enterprise', revenue: 5000, previousRevenue: 4200 },
 ];
+
+/** Mock 30-day series for KPI sparklines until /api/merchant/metrics is wired. */
+const MOCK_MRR_SERIES = [
+  39.1, 39.4, 39.2, 39.8, 40.1, 40.0, 40.5, 40.3, 40.9, 41.2, 41.0, 41.6,
+  41.4, 41.9, 42.2, 42.0, 42.5, 42.3, 42.8, 42.6, 43.1, 42.9, 43.4, 43.2,
+  43.7, 43.5, 44.0, 44.2, 44.0, 44.5,
+].map((k) => Math.round(k * 1000));
+
+const MOCK_ACTIVE_SUBS_SERIES = [
+  1.18, 1.19, 1.19, 1.2, 1.21, 1.2, 1.22, 1.22, 1.23, 1.24, 1.23, 1.25,
+  1.25, 1.26, 1.26, 1.27, 1.28, 1.27, 1.28, 1.29, 1.29, 1.3, 1.3, 1.31,
+  1.31, 1.32, 1.32, 1.33, 1.33, 1.34,
+].map((k) => Math.round(k * 1000));
 
 /** Human-readable widget labels for the live-region summary banner. */
 const WIDGET_LABELS: Record<WidgetId, string> = {
@@ -53,6 +71,15 @@ export default function Dashboard() {
 
   const { widgets, loadAll, retryWidget, isInitialLoading, failedWidgetIds } =
     useDashboardWidgets();
+
+  const {
+    isOpen: isTourOpen,
+    showCompletion,
+    closeTour,
+    completeTour,
+    dismissTour,
+    closeCompletion,
+  } = useProductTour();
 
   const [activeFilters, setActiveFilters] = useState([
     { id: 'status', label: 'Status: Active' },
@@ -149,9 +176,10 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="dashboard-page">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="dashboard-header">
+    <>
+      <div className="dashboard-page">
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <header className="dashboard-header">
         <div>
           <div className="dashboard-heading-row">
             <LayoutGrid size={20} aria-hidden="true" />
@@ -283,6 +311,10 @@ export default function Dashboard() {
           trend="up"
           icon={<Users size={20} />}
           helpText={t('dashboard.kpis.activeSubscriptionsHelp')}
+          sparklineData={MOCK_ACTIVE_SUBS_SERIES}
+          target={1500}
+          targetLabel={t('dashboard.kpis.targetLabel')}
+          targetProgress={86}
           loading={w.kpi_active_subscriptions.status === 'loading'}
           error={kpiError('kpi_active_subscriptions')}
           isOfflineError={kpiOffline('kpi_active_subscriptions')}
@@ -296,6 +328,10 @@ export default function Dashboard() {
           trend="up"
           icon={<TrendingUp size={20} />}
           helpText={t('dashboard.kpis.mrrHelp')}
+          sparklineData={MOCK_MRR_SERIES}
+          target={50000}
+          targetLabel={t('dashboard.kpis.targetLabel')}
+          targetProgress={85}
           loading={w.kpi_mrr.status === 'loading'}
           error={kpiError('kpi_mrr')}
           isOfflineError={kpiOffline('kpi_mrr')}
@@ -309,6 +345,7 @@ export default function Dashboard() {
           trend="down"
           icon={<AlertCircle size={20} />}
           helpText={t('dashboard.kpis.failedChargesHelp')}
+          helpTermId="dunning"
           loading={w.kpi_failed_charges.status === 'loading'}
           error={kpiError('kpi_failed_charges')}
           isOfflineError={kpiOffline('kpi_failed_charges')}
@@ -334,7 +371,15 @@ export default function Dashboard() {
         {/* Chart Section */}
         <div className="dashboard-panel dashboard-panel--chart">
           <div className="dashboard-panel__header">
-            <h2 className="dashboard-section-title">Revenue Growth</h2>
+            <h2 className="dashboard-section-title">
+              Revenue Growth
+              <HelpHint
+                title="Revenue Growth"
+                definition="Total billed revenue per month across all active subscriptions. Use the trend to spot growth or contraction early."
+                example="A spike in February often reflects annual renewals rather than new customer growth."
+                learnMoreUrl="https://docs.stellarbill.example/reports/revenue-growth"
+              />
+            </h2>
             <Link to="/reports" className="dashboard-link">
               View Detailed Report <ArrowRight size={12} />
             </Link>
@@ -385,10 +430,29 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Revenue Split By Plan ───────────────────────────────────── */}
-      <div className="dashboard-revenue-split">
-        <RevenueSplitByPlanPanel plans={MOCK_PLAN_REVENUE} />
+        {/* ── Revenue Split By Plan ───────────────────────────────────── */}
+        <div className="dashboard-revenue-split">
+          <RevenueSplitByPlanPanel plans={MOCK_PLAN_REVENUE} />
+        </div>
       </div>
-    </div>
+
+      {/* Product Tour */}
+      <ProductTour
+        steps={dashboardTourSteps}
+        isOpen={isTourOpen}
+        onClose={closeTour}
+        onComplete={completeTour}
+        onDismiss={dismissTour}
+      />
+
+      {/* Tour Completion Celebration */}
+      <TourCompletion
+        isOpen={showCompletion}
+        onClose={closeCompletion}
+        title="You're all set!"
+        message="You've completed the tour. You're ready to start managing your subscriptions and growing your business."
+        actionLabel="Get started"
+      />
+    </>
   );
 }
