@@ -595,4 +595,173 @@ describe('ProductTour', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Regression — TourStep failure path: `if (!isOpen) return null` (line 188)
+  //
+  // These tests pin the exact contract: when isOpen transitions to false the
+  // component must return null (no DOM output), and when it is true the full
+  // tooltip is rendered.  They guard against accidental removal or weakening
+  // of the early-return guard.
+  // ---------------------------------------------------------------------------
+
+  describe('TourStep failure path — if (!isOpen) return null regression', () => {
+    it('returns null (renders nothing) when isOpen is false — explicit null-return branch', () => {
+      render(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={false}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      // The early-return guard must prevent any tour DOM from appearing.
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByText('First Step')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /next step/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /close tour/i })).not.toBeInTheDocument();
+    });
+
+    it('renders the full tooltip when isOpen is true — neighboring normal path', () => {
+      render(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={true}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText('First Step')).toBeInTheDocument();
+      expect(screen.getByText('This is the first step content')).toBeInTheDocument();
+    });
+
+    it('unmounts all tour nodes when isOpen transitions from true → false', () => {
+      const { rerender } = render(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={true}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      // Confirm it was mounted
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      // Transition to closed
+      rerender(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={false}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('mounts tour nodes when isOpen transitions from false → true', () => {
+      const { rerender } = render(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={false}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      rerender(
+        <ProductTour
+          steps={mockSteps}
+          isOpen={true}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('does not render when isOpen is false even with a single step', () => {
+      const singleStep: TourStep[] = [
+        {
+          id: 'only',
+          target: '.test-element-1',
+          title: 'Only Step',
+          content: 'Single step content',
+          placement: 'center',
+        },
+      ];
+
+      render(
+        <ProductTour
+          steps={singleStep}
+          isOpen={false}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByText('Only Step')).not.toBeInTheDocument();
+    });
+
+    it('does not render when isOpen is false with an empty steps array', () => {
+      render(
+        <ProductTour
+          steps={[]}
+          isOpen={false}
+          onClose={vi.fn()}
+          onComplete={vi.fn()}
+          onDismiss={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('renders step title and content via the normal path for every placement value', () => {
+      const placements = ['top', 'bottom', 'left', 'right', 'center'] as const;
+
+      placements.forEach((placement) => {
+        const step: TourStep[] = [
+          {
+            id: `placement-${placement}`,
+            target: '.test-element-1',
+            title: `${placement} step`,
+            content: `Content for ${placement}`,
+            placement,
+          },
+        ];
+
+        const { unmount } = render(
+          <ProductTour
+            steps={step}
+            isOpen={true}
+            onClose={vi.fn()}
+            onComplete={vi.fn()}
+            onDismiss={vi.fn()}
+          />,
+        );
+
+        expect(screen.getByText(`${placement} step`)).toBeInTheDocument();
+        expect(screen.getByText(`Content for ${placement}`)).toBeInTheDocument();
+
+        unmount();
+      });
+    });
+  });
 });
