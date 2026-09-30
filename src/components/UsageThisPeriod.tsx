@@ -3,15 +3,41 @@ interface UsageThisPeriodProps {
   usage?: string | null
   estimatedCharge?: string | null
   onViewFullUsage?: () => void
+  isLoading?: boolean
+  error?: string | null
+}
+
+/**
+ * Coerce a loose prop value into a displayable string.
+ * Invalid/blank inputs (null, undefined, empty/whitespace strings, NaN,
+ * objects, booleans) resolve to `null` so the UI can render a deterministic
+ * "—" fallback instead of crashing.
+ */
+function normalizeValue(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value.trim() === '' ? null : value
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  return null
 }
 
 export default function UsageThisPeriod({
   billingPeriod,
   usage,
   estimatedCharge,
-  onViewFullUsage
+  onViewFullUsage,
+  isLoading = false,
+  error = null
 }: UsageThisPeriodProps) {
-  const hasUsageData = billingPeriod || usage || estimatedCharge
+  const period = normalizeValue(billingPeriod)
+  const usageText = normalizeValue(usage)
+  const charge = normalizeValue(estimatedCharge)
+
+  const hasUsageData = Boolean(period || usageText || charge)
+  const hasError = typeof error === 'string' && error.trim() !== ''
+  const hasBody = isLoading || hasError || hasUsageData
 
   return (
     <div style={{
@@ -25,7 +51,7 @@ export default function UsageThisPeriod({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: hasUsageData ? '1.5rem' : '0',
+        marginBottom: hasBody ? '1.5rem' : '0',
         flexWrap: 'wrap',
         gap: '0.75rem'
       }}>
@@ -44,7 +70,7 @@ export default function UsageThisPeriod({
           </h2>
         </div>
         
-        {hasUsageData && (
+        {hasUsageData && !isLoading && !hasError && (
           <button
             onClick={onViewFullUsage}
             style={{
@@ -71,8 +97,31 @@ export default function UsageThisPeriod({
         )}
       </div>
 
-      {/* Empty State or Metric Panels */}
-      {!hasUsageData ? (
+      {/* Loading, Error, Empty State or Metric Panels */}
+      {isLoading ? (
+        <p
+          role="status"
+          aria-live="polite"
+          style={{
+            color: '#64748b',
+            margin: '1rem 0 0',
+            textAlign: 'center'
+          }}
+        >
+          Loading usage for this period…
+        </p>
+      ) : hasError ? (
+        <p
+          role="alert"
+          style={{
+            color: '#f87171',
+            margin: '1rem 0 0',
+            textAlign: 'center'
+          }}
+        >
+          {error}
+        </p>
+      ) : !hasUsageData ? (
         <p style={{ 
           color: '#64748b', 
           margin: '1rem 0 0', 
@@ -107,7 +156,7 @@ export default function UsageThisPeriod({
               fontWeight: 600,
               color: '#ffffff'
             }}>
-              {billingPeriod || '—'}
+              {period || '—'}
             </div>
           </div>
 
@@ -132,7 +181,7 @@ export default function UsageThisPeriod({
               fontWeight: 600,
               color: '#ffffff'
             }}>
-              {usage || '—'}
+              {usageText || '—'}
             </div>
           </div>
 
@@ -157,7 +206,7 @@ export default function UsageThisPeriod({
               fontWeight: 600,
               color: '#ffffff'
             }}>
-              {estimatedCharge || '—'}
+              {charge || '—'}
             </div>
           </div>
         </div>
